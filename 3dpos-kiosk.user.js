@@ -698,30 +698,39 @@ function removeLockdown() {
  * HIDDEN HOTKEY TOGGLE
  *****************************************************************/
 function hotkeyMatches(e) {
-  const hk = CONFIG.hotkey;
-  if ((e.key || '').toUpperCase() !== (hk.key || '').toUpperCase()) return false;
-  if (e.ctrlKey !== !!hk.ctrl) return false;
-  if (e.altKey !== !!hk.alt) return false;
-  if (e.shiftKey !== !!hk.shift) return false;
-  if (e.metaKey !== !!hk.meta) return false;
+	const hk = CONFIG.hotkey;
+	if ((e.key || '').toUpperCase() !== (hk.key || '').toUpperCase()) return false;
+	if (e.ctrlKey !== !!hk.ctrl) return false;
+	if (e.altKey !== !!hk.alt) return false;
+	if (e.shiftKey !== !!hk.shift) return false;
+	if (e.metaKey !== !!hk.meta) return false;
 
-  // Don't toggle while typing
-  const t = e.target;
-  const tag = t && t.tagName ? t.tagName.toLowerCase() : '';
-  const typing = tag === 'input' || tag === 'textarea' || t?.isContentEditable;
-  if (typing) return false;
+	// Don't toggle while typing
+	const t = e.target;
+	const tag = t && t.tagName ? t.tagName.toLowerCase() : '';
+	const typing = tag === 'input' || tag === 'textarea' || t?.isContentEditable;
+	if (typing) return false;
 
-  return true;
+	return true;
 }
 
 function installHotkey() {
-  window.addEventListener('keydown', (e) => {
-    if (!hotkeyMatches(e)) return;
-    e.preventDefault();
+	function handleKeydown(e) {
+		if (!hotkeyMatches(e)) return;
+		e.preventDefault();
+		e.stopPropagation();
+		e.stopImmediatePropagation();
 
-    State.enabled = !State.enabled;
-    apply('hotkey');
-  }, true);
+		State.enabled = !State.enabled;
+		apply('hotkey');
+		log('Hotkey triggered, enabled:', State.enabled);
+	}
+
+	// Attach to both window and document to ensure we catch it
+	window.addEventListener('keydown', handleKeydown, true);
+	document.addEventListener('keydown', handleKeydown, true);
+
+	log('Hotkey installed: Ctrl+Alt+Shift+O');
 }
 
 
