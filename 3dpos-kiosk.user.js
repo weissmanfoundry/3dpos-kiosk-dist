@@ -699,24 +699,48 @@ function removeLockdown() {
  *****************************************************************/
 function hotkeyMatches(e) {
 	const hk = CONFIG.hotkey;
-	if ((e.key || '').toUpperCase() !== (hk.key || '').toUpperCase()) return false;
-	if (e.ctrlKey !== !!hk.ctrl) return false;
-	if (e.altKey !== !!hk.alt) return false;
-	if (e.shiftKey !== !!hk.shift) return false;
-	if (e.metaKey !== !!hk.meta) return false;
+	const keyMatch = (e.key || '').toUpperCase() === (hk.key || '').toUpperCase();
+	const ctrlMatch = e.ctrlKey === !!hk.ctrl;
+	// Use getModifierState for more reliable Alt detection (handles altLeft/altRight)
+	// On Mac, users often press Command (meta) instead of Option (alt)
+	// Accept either Alt OR Meta to work on both Mac and other systems
+	const altPressed = e.getModifierState ? e.getModifierState('Alt') : e.altKey;
+	const metaPressed = e.getModifierState ? e.getModifierState('Meta') : e.metaKey;
+	const altMatch = hk.alt ? altPressed || metaPressed : !altPressed && !metaPressed;
+	const shiftMatch = e.shiftKey === !!hk.shift;
+	// If alt is required and we're using Meta as Alt (metaKey true but altKey false),
+	// don't also require meta to be false. Otherwise, check meta normally.
+	const metaMatch = hk.alt && metaPressed && !altPressed ? true : metaPressed === !!hk.meta;
+
+	if (!keyMatch) return false;
+	if (!ctrlMatch) return false;
+	if (!altMatch) return false;
+	if (!shiftMatch) return false;
+	if (!metaMatch) return false;
 
 	// Don't toggle while typing
 	const t = e.target;
 	const tag = t && t.tagName ? t.tagName.toLowerCase() : '';
 	const typing = tag === 'input' || tag === 'textarea' || t?.isContentEditable;
-	if (typing) return false;
+	if (typing) {
+		if (State.debug) log('Hotkey blocked: user is typing in', tag);
+		return false;
+	}
 
 	return true;
 }
 
 function installHotkey() {
+	// Prevent multiple installations
+	if (window.__tmHotkeyInstalled) {
+		log('Hotkey already installed, skipping');
+		return;
+	}
+	window.__tmHotkeyInstalled = true;
+
 	function handleKeydown(e) {
 		if (!hotkeyMatches(e)) return;
+
 		e.preventDefault();
 		e.stopPropagation();
 		e.stopImmediatePropagation();
