@@ -212,6 +212,11 @@ section.chat[data-v-2bf39e6a] {
 	display: none !important;
 }
 
+.printers-table__item .top-bar--left {
+	width: 50%;
+	padding: 14px 0;
+}
+
 /* ------- Printing/Queue List ------- */
 
 /* Keep the "job in progress" area inside the card */
